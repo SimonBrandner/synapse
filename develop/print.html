@@ -9048,12 +9048,10 @@ worker_replication_host: 127.0.0.1
 worker_replication_http_port: 9093
 
 worker_listeners:
- - type: http
-   port: 8083
-   resources:
-     - names:
-       - client
-       - federation
+  - type: http
+    port: 8083
+    resources:
+      - names: [client, federation]
 
 worker_log_config: /home/matrix/synapse/config/worker1_log_config.yaml
 </code></pre>
@@ -9221,9 +9219,9 @@ the full URI, or even just round robin), the room ID is the path component after
 of events, then a dedicated set of workers can be provisioned to limit the
 effects of bursts of events from that bridge on events sent by normal users.</p>
 <h4 id="stream-writers"><a class="header" href="#stream-writers">Stream writers</a></h4>
-<p>Additionally, there is <em>experimental</em> support for moving writing of specific
-streams (such as events) off of the main process to a particular worker. (This
-is only supported with Redis-based replication.)</p>
+<p>Additionally, the writing of specific streams (such as events) can be moved off
+of the main process to a particular worker.
+(This is only supported with Redis-based replication.)</p>
 <p>To enable this, the worker must have a HTTP replication listener configured,
 have a <code>worker_name</code> and be listed in the <code>instance_map</code> config. The same worker
 can handle multiple streams, but unless otherwise documented, each stream can only
@@ -9279,7 +9277,7 @@ the stream writer for the <code>presence</code> stream:</p>
 <pre><code>^/_matrix/client/(api/v1|r0|v3|unstable)/presence/
 </code></pre>
 <h4 id="background-tasks"><a class="header" href="#background-tasks">Background tasks</a></h4>
-<p>There is also <em>experimental</em> support for moving background tasks to a separate
+<p>There is also support for moving background tasks to a separate
 worker. Background tasks are run periodically or started via replication. Exactly
 which tasks are configured to run depends on your Synapse configuration (e.g. if
 stats is enabled).</p>
@@ -9463,24 +9461,24 @@ require. Additionally, to group the required services, it sets up a
 <p>See the folder <a href="https://github.com/matrix-org/synapse/tree/develop/docs/systemd-with-workers/system/">system</a>
 for the systemd unit files.</p>
 <p>The folder <a href="https://github.com/matrix-org/synapse/tree/develop/docs/systemd-with-workers/workers/">workers</a>
-contains an example configuration for the <code>federation_reader</code> worker.</p>
+contains an example configuration for the <code>generic_worker</code> worker.</p>
 <h2 id="synapse-configuration-files"><a class="header" href="#synapse-configuration-files">Synapse configuration files</a></h2>
 <p>See <a href="systemd-with-workers/../workers.html">the worker documentation</a> for information on how to set up the
 configuration files and reverse-proxy correctly.
-Below is a sample <code>federation_reader</code> worker configuration file.</p>
-<pre><code class="language-yaml">worker_app: synapse.app.federation_reader
-worker_name: federation_reader1
+Below is a sample <code>generic_worker</code> worker configuration file.</p>
+<pre><code class="language-yaml">worker_app: synapse.app.generic_worker
+worker_name: generic_worker1
 
 worker_replication_host: 127.0.0.1
 worker_replication_http_port: 9093
 
 worker_listeners:
-    - type: http
-      port: 8011
-      resources:
-          - names: [federation]
+  - type: http
+    port: 8011
+    resources:
+      - names: [client, federation]
 
-worker_log_config: /etc/matrix-synapse/federation-reader-log.yaml
+worker_log_config: /etc/matrix-synapse/generic-worker-log.yaml
 </code></pre>
 <p>Systemd manages daemonization itself, so ensure that none of the configuration
 files set either <code>daemonize</code> or <code>worker_daemonize</code>.</p>
@@ -9515,9 +9513,9 @@ systemctl stop matrix-synapse.target
 # Restart the master alone
 systemctl start matrix-synapse.service
 
-# Restart a specific worker (eg. federation_reader); the master is
+# Restart a specific worker (eg. generic_worker); the master is
 # unaffected by this.
-systemctl restart matrix-synapse-worker@federation_reader.service
+systemctl restart matrix-synapse-worker@generic_worker.service
 
 # Add a new worker (assuming all configs are set up already)
 systemctl enable matrix-synapse-worker@federation_writer.service
@@ -13490,49 +13488,30 @@ do!</p>
 <p>The Synapse codebase uses a number of code formatting tools in order to
 quickly and automatically check for formatting (and sometimes logical)
 errors in code.</p>
-<p>The necessary tools are detailed below.</p>
-<p>First install them with:</p>
+<p>The necessary tools are:</p>
+<ul>
+<li><a href="https://black.readthedocs.io/en/stable/">black</a>, a source code formatter;</li>
+<li><a href="https://pycqa.github.io/isort/">isort</a>, which organises each file's imports;</li>
+<li><a href="https://flake8.pycqa.org/en/latest/">flake8</a>, which can spot common errors; and</li>
+<li><a href="https://mypy.readthedocs.io/en/stable/">mypy</a>, a type checker.</li>
+</ul>
+<p>Install them with:</p>
 <pre><code class="language-sh">pip install -e &quot;.[lint,mypy]&quot;
 </code></pre>
-<ul>
-<li>
-<p><strong>black</strong></p>
-<p>The Synapse codebase uses <a href="https://pypi.org/project/black/">black</a>
-as an opinionated code formatter, ensuring all comitted code is
-properly formatted.</p>
-<p>Have <code>black</code> auto-format your code (it shouldn't change any
-functionality) with:</p>
-<pre><code class="language-sh">black .
+<p>The easiest way to run the lints is to invoke the linter script as follows.</p>
+<pre><code class="language-sh">scripts-dev/lint.sh
 </code></pre>
-</li>
-<li>
-<p><strong>flake8</strong></p>
-<p><code>flake8</code> is a code checking tool. We require code to pass <code>flake8</code>
-before being merged into the codebase.</p>
-<p>Check all application and test code with:</p>
-<pre><code class="language-sh">flake8 .
-</code></pre>
-</li>
-<li>
-<p><strong>isort</strong></p>
-<p><code>isort</code> ensures imports are nicely formatted, and can suggest and
-auto-fix issues such as double-importing.</p>
-<p>Auto-fix imports with:</p>
-<pre><code class="language-sh">isort .
-</code></pre>
-</li>
-</ul>
 <p>It's worth noting that modern IDEs and text editors can run these tools
 automatically on save. It may be worth looking into whether this
 functionality is supported in your editor for a more convenient
-development workflow. It is not, however, recommended to run <code>flake8</code> on
-save as it takes a while and is very resource intensive.</p>
+development workflow. It is not, however, recommended to run <code>flake8</code> or <code>mypy</code>
+on save as they take a while and can be very resource intensive.</p>
 <h2 id="general-rules"><a class="header" href="#general-rules">General rules</a></h2>
 <ul>
 <li><strong>Naming</strong>:
 <ul>
-<li>Use camel case for class and type names</li>
-<li>Use underscores for functions and variables.</li>
+<li>Use <code>CamelCase</code> for class and type names</li>
+<li>Use underscores for <code>function_names</code> and <code>variable_names</code>.</li>
 </ul>
 </li>
 <li><strong>Docstrings</strong>: should follow the <a href="https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings">google code
