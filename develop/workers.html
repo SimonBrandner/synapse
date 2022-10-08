@@ -172,13 +172,8 @@ sync with the database state.</p>
 stream between all configured Synapse processes. Additionally, processes may
 make HTTP requests to each other, primarily for operations which need to wait
 for a reply ─ such as sending an event.</p>
-<p>Redis support was added in v1.13.0 with it becoming the recommended method in
-v1.18.0. It replaced the old direct TCP connections (which is deprecated as of
-v1.18.0) to the main process. With Redis, rather than all the workers connecting
-to the main process, all the workers and the main process connect to Redis,
-which relays replication commands between processes. This can give a significant
-cpu saving on the main process and will be a prerequisite for upcoming
-performance improvements.</p>
+<p>All the workers and the main process connect to Redis, which relays replication
+commands between processes.</p>
 <p>If Redis support is enabled Synapse will use it as a shared cache, as well as a
 pub/sub mechanism.</p>
 <p>See the <a href="#architectural-diagram">Architectural diagram</a> section at the end for
@@ -250,7 +245,8 @@ public internet; replication traffic is:</p>
 <li>The HTTP replication endpoint that it should talk to on the main synapse process
 (<code>worker_replication_host</code> and <code>worker_replication_http_port</code>)</li>
 <li>If handling HTTP requests, a <code>worker_listeners</code> option with an <code>http</code>
-listener, in the same way as the <code>listeners</code> option in the shared config.</li>
+listener, in the same way as the <a href="usage/configuration/config_documentation.html#listeners"><code>listeners</code></a>
+option in the shared config.</li>
 <li>If handling the <code>^/_matrix/client/v3/keys/upload</code> endpoint, the HTTP URI for
 the main process (<code>worker_main_http_uri</code>).</li>
 </ul>
@@ -405,8 +401,9 @@ using):</p>
 For multiple workers not handling the SSO endpoints properly, see
 <a href="https://github.com/matrix-org/synapse/issues/7530">#7530</a> and
 <a href="https://github.com/matrix-org/synapse/issues/9427">#9427</a>.</p>
-<p>Note that a HTTP listener with <code>client</code> and <code>federation</code> resources must be
-configured in the <code>worker_listeners</code> option in the worker config.</p>
+<p>Note that a <a href="usage/configuration/config_documentation.html#listeners">HTTP listener</a>
+with <code>client</code> and <code>federation</code> <code>resources</code> must be configured in the <code>worker_listeners</code>
+option in the worker config.</p>
 <h4 id="load-balancing"><a class="header" href="#load-balancing">Load balancing</a></h4>
 <p>It is possible to run multiple instances of this worker app, with incoming requests
 being load-balanced between them by the reverse-proxy. However, different endpoints
@@ -435,9 +432,9 @@ of events, then a dedicated set of workers can be provisioned to limit the
 effects of bursts of events from that bridge on events sent by normal users.</p>
 <h4 id="stream-writers"><a class="header" href="#stream-writers">Stream writers</a></h4>
 <p>Additionally, the writing of specific streams (such as events) can be moved off
-of the main process to a particular worker.
-(This is only supported with Redis-based replication.)</p>
-<p>To enable this, the worker must have a HTTP replication listener configured,
+of the main process to a particular worker.</p>
+<p>To enable this, the worker must have a
+<a href="usage/configuration/config_documentation.html#listeners">HTTP <code>replication</code> listener</a> configured,
 have a <code>worker_name</code> and be listed in the <code>instance_map</code> config. The same worker
 can handle multiple streams, but unless otherwise documented, each stream can only
 have a single writer.</p>
@@ -520,7 +517,7 @@ the stream writer for the <code>presence</code> stream:</p>
 <p>There is also support for moving background tasks to a separate
 worker. Background tasks are run periodically or started via replication. Exactly
 which tasks are configured to run depends on your Synapse configuration (e.g. if
-stats is enabled).</p>
+stats is enabled). This worker doesn't handle any REST endpoints itself.</p>
 <p>To enable this, the worker must have a <code>worker_name</code> and can be configured to run
 background tasks. For example, to move background tasks to a dedicated worker,
 the shared configuration would include:</p>
@@ -554,8 +551,9 @@ it to the chosen user directory worker.</p>
 <p>This style of configuration supersedes the legacy <code>synapse.app.user_dir</code>
 worker application type.</p>
 <h4 id="notifying-application-services"><a class="header" href="#notifying-application-services">Notifying Application Services</a></h4>
-<p>You can designate one generic worker to send output traffic to Application Services.</p>
-<p>Specify its name in the shared configuration as follows:</p>
+<p>You can designate one generic worker to send output traffic to Application Services.
+Doesn't handle any REST endpoints itself, but you should specify its name in the
+shared configuration as follows:</p>
 <pre><code class="language-yaml">notify_appservices_from_worker: worker_name
 </code></pre>
 <p>This work cannot be load-balanced; please ensure the main process is restarted
@@ -571,6 +569,16 @@ pusher instances by their worker name, e.g.:</p>
 <pre><code class="language-yaml">pusher_instances:
     - pusher_worker1
     - pusher_worker2
+</code></pre>
+<p>An example for a pusher instance:</p>
+<pre><code class="language-yaml">worker_app: synapse.app.pusher
+worker_name: pusher_worker1
+
+# The replication listener on the main synapse process.
+worker_replication_host: 127.0.0.1
+worker_replication_http_port: 9093
+
+worker_log_config: /etc/matrix-synapse/pusher-worker-log.yaml
 </code></pre>
 <h3 id="synapseappappservice"><a class="header" href="#synapseappappservice"><code>synapse.app.appservice</code></a></h3>
 <p><strong>Deprecated as of Synapse v1.59.</strong> <a href="#notifying-application-services">Use <code>synapse.app.generic_worker</code> with the
@@ -591,6 +599,16 @@ For example:</p>
     - federation_sender1
     - federation_sender2
 </code></pre>
+<p>An example for a federation sender instance:</p>
+<pre><code class="language-yaml">worker_app: synapse.app.federation_sender
+worker_name: federation_sender1
+
+# The replication listener on the main synapse process.
+worker_replication_host: 127.0.0.1
+worker_replication_http_port: 9093
+
+worker_log_config: /etc/matrix-synapse/federation-sender-log.yaml
+</code></pre>
 <h3 id="synapseappmedia_repository"><a class="header" href="#synapseappmedia_repository"><code>synapse.app.media_repository</code></a></h3>
 <p>Handles the media repository. It can handle all endpoints starting with:</p>
 <pre><code>/_matrix/media/
@@ -607,14 +625,23 @@ For example:</p>
 file to stop the main synapse running background jobs related to managing the
 media repository. Note that doing so will prevent the main process from being
 able to handle the above endpoints.</p>
-<p>In the <code>media_repository</code> worker configuration file, configure the http listener to
+<p>In the <code>media_repository</code> worker configuration file, configure the
+<a href="usage/configuration/config_documentation.html#listeners">HTTP listener</a> to
 expose the <code>media</code> resource. For example:</p>
-<pre><code class="language-yaml">worker_listeners:
- - type: http
-   port: 8085
-   resources:
-     - names:
-       - media
+<pre><code class="language-yaml">worker_app: synapse.app.media_repository
+worker_name: media_worker
+
+# The replication listener on the main synapse process.
+worker_replication_host: 127.0.0.1
+worker_replication_http_port: 9093
+
+worker_listeners:
+  - type: http
+    port: 8085
+    resources:
+      - names: [media]
+
+worker_log_config: /etc/matrix-synapse/media-worker-log.yaml
 </code></pre>
 <p>Note that if running multiple media repositories they must be on the same server
 and you must configure a single instance to run the background tasks, e.g.:</p>
@@ -649,14 +676,9 @@ equivalent to <code>synapse.app.generic_worker</code>:</p>
 <li><code>synapse.app.synchrotron</code></li>
 </ul>
 <h2 id="migration-from-old-config"><a class="header" href="#migration-from-old-config">Migration from old config</a></h2>
-<p>There are two main independent changes that have been made: introducing Redis
-support and merging apps into <code>synapse.app.generic_worker</code>. Both these changes
-are backwards compatible and so no changes to the config are required, however
-server admins are encouraged to plan to migrate to Redis as the old style direct
-TCP replication config is deprecated.</p>
-<p>To migrate to Redis add the <code>redis</code> config as above, and optionally remove the
-TCP <code>replication</code> listener from master and <code>worker_replication_port</code> from worker
-config.</p>
+<p>A main change that has occurred is the merging of worker apps into
+<code>synapse.app.generic_worker</code>. This change is backwards compatible and so no
+changes to the config are required.</p>
 <p>To migrate apps to use <code>synapse.app.generic_worker</code> simply update the
 <code>worker_app</code> option in the worker configs, and where worker are started (e.g.
 in systemd service files, but not required for synctl).</p>

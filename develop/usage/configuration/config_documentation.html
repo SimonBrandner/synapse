@@ -288,7 +288,7 @@ be inconvenient in some environments.</p>
 option configures Synapse to serve a file at <code>https://&lt;server_name&gt;/.well-known/matrix/server</code>.
 This will tell other servers to send traffic to port 443 instead.</p>
 <p>This option currently defaults to false.</p>
-<p>See https://matrix-org.github.io/synapse/latest/delegate.html for more
+<p>See <a href="../../delegate.html">Delegation of incoming federation traffic</a> for more
 information.</p>
 <p>Example configuration:</p>
 <pre><code class="language-yaml">serve_server_wellknown: true
@@ -481,9 +481,6 @@ configuration.</p>
 <li>
 <p><code>metrics</code>: (see the docs <a href="../../metrics-howto.html">here</a>),</p>
 </li>
-<li>
-<p><code>replication</code>: (deprecated as of Synapse 1.18, see the docs <a href="../../workers.html">here</a>).</p>
-</li>
 </ul>
 </li>
 <li>
@@ -491,7 +488,16 @@ configuration.</p>
 </li>
 <li>
 <p><code>x_forwarded</code>: Only valid for an 'http' listener. Set to true to use the X-Forwarded-For header as the client IP. Useful when Synapse is
-behind a reverse-proxy.</p>
+behind a <a href="../../reverse_proxy.html">reverse-proxy</a>.</p>
+</li>
+<li>
+<p><code>request_id_header</code>: The header extracted from each incoming request that is
+used as the basis for the request ID. The request ID is used in
+<a href="../administration/request_log.html#request-log-format">logs</a> and tracing to
+correlate and match up requests. When unset, Synapse will automatically
+generate sequential request IDs. This option is useful when Synapse is behind
+a <a href="../../reverse_proxy.html">reverse-proxy</a>.</p>
+<p><em>Added in Synapse 1.68.0.</em></p>
 </li>
 <li>
 <p><code>resources</code>: Only valid for an 'http' listener. A list of resources to host
@@ -1011,8 +1017,9 @@ on this homeserver.</p>
 <p>Options related to caching.</p>
 <hr />
 <h3 id="event_cache_size"><a class="header" href="#event_cache_size"><code>event_cache_size</code></a></h3>
-<p>The number of events to cache in memory. Not affected by
-<code>caches.global_factor</code> and is not part of the <code>caches</code> section. Defaults to 10K.</p>
+<p>The number of events to cache in memory. Defaults to 10K. Like other caches,
+this is affected by <code>caches.global_factor</code> (see below).</p>
+<p>Note that this option is not part of the <code>caches</code> section.</p>
 <p>Example configuration:</p>
 <pre><code class="language-yaml">event_cache_size: 15K
 </code></pre>
@@ -1067,7 +1074,7 @@ Defaults to 2m.</p>
 <li>
 <p><code>cache_autotuning</code> and its sub-options <code>max_cache_memory_usage</code>, <code>target_cache_memory_usage</code>, and
 <code>min_cache_ttl</code> work in conjunction with each other to maintain a balance between cache memory
-usage and cache entry availability. You must be using <a href="https://github.com/matrix-org/synapse#help-synapse-is-slow-and-eats-all-my-ramcpu">jemalloc</a>
+usage and cache entry availability. You must be using <a href="../administration/admin_faq.html#help-synapse-is-slow-and-eats-all-my-ramcpu">jemalloc</a>
 to utilize this option, and all three of the options must be specified for this feature to work. This option
 defaults to off, enable it by providing values for the sub-options listed below. Please note that the feature will not work
 and may cause unstable behavior (such as excessive emptying of caches or exceptions) if all of the values are not provided.
@@ -1317,7 +1324,7 @@ client is attempting to log into. Defaults to <code>per_second: 0.17</code>,
 <code>burst_count: 3</code>.</p>
 </li>
 <li>
-<p><code>failted_attempts</code> ratelimits login requests based on the account the
+<p><code>failed_attempts</code> ratelimits login requests based on the account the
 client is attempting to log into, based on the amount of failed login
 attempts for this account. Defaults to <code>per_second: 0.17</code>, <code>burst_count: 3</code>.</p>
 </li>
@@ -1958,6 +1965,8 @@ as a publicly joinable room when the first user registers for the
 homeserver. If the room already exists, make certain it is a publicly joinable
 room, i.e. the join rule of the room must be set to 'public'. You can find more options
 relating to auto-joining rooms below.</p>
+<p>As Spaces are just rooms under the hood, Space aliases may also be
+used.</p>
 <p>Example configuration:</p>
 <pre><code class="language-yaml">auto_join_rooms:
   - &quot;#exampleroom:example.com&quot;
@@ -1967,7 +1976,7 @@ relating to auto-joining rooms below.</p>
 <h3 id="autocreate_auto_join_rooms"><a class="header" href="#autocreate_auto_join_rooms"><code>autocreate_auto_join_rooms</code></a></h3>
 <p>Where <code>auto_join_rooms</code> are specified, setting this flag ensures that
 the rooms exist by creating them when the first user on the
-homeserver registers.</p>
+homeserver registers. This option will not create Spaces.</p>
 <p>By default the auto-created rooms are publicly joinable from any federated
 server. Use the <code>autocreate_auto_join_rooms_federated</code> and
 <code>autocreate_auto_join_room_preset</code> settings to customise this behaviour.</p>
@@ -1979,7 +1988,7 @@ users cannot be auto-joined since they do not exist.</p>
 </code></pre>
 <hr />
 <h3 id="autocreate_auto_join_rooms_federated"><a class="header" href="#autocreate_auto_join_rooms_federated"><code>autocreate_auto_join_rooms_federated</code></a></h3>
-<p>Whether the rooms listen in <code>auto_join_rooms</code> that are auto-created are available
+<p>Whether the rooms listed in <code>auto_join_rooms</code> that are auto-created are available
 via federation. Only has an effect if <code>autocreate_auto_join_rooms</code> is true.</p>
 <p>Note that whether a room is federated cannot be modified after
 creation.</p>
@@ -2102,6 +2111,24 @@ Defaults to false.</p>
 <pre><code class="language-yaml">enable_metrics: true
 </code></pre>
 <hr />
+<h3 id="enable_legacy_metrics"><a class="header" href="#enable_legacy_metrics"><code>enable_legacy_metrics</code></a></h3>
+<p>Set to <code>true</code> to publish both legacy and non-legacy Prometheus metric names,
+or to <code>false</code> to only publish non-legacy Prometheus metric names.
+Defaults to <code>true</code>. Has no effect if <code>enable_metrics</code> is <code>false</code>.
+<strong>In Synapse v1.71.0, this will default to <code>false</code> before being removed in Synapse v1.73.0.</strong></p>
+<p>Legacy metric names include:</p>
+<ul>
+<li>metrics containing colons in the name, such as <code>synapse_util_caches_response_cache:hits</code>, because colons are supposed to be reserved for user-defined recording rules;</li>
+<li>counters that don't end with the <code>_total</code> suffix, such as <code>synapse_federation_client_sent_edus</code>, therefore not adhering to the OpenMetrics standard.</li>
+</ul>
+<p>These legacy metric names are unconventional and not compliant with OpenMetrics standards.
+They are included for backwards compatibility.</p>
+<p>Example configuration:</p>
+<pre><code class="language-yaml">enable_legacy_metrics: false
+</code></pre>
+<p>See https://github.com/matrix-org/synapse/issues/11106 for context.</p>
+<p><em>Since v1.67.0.</em></p>
+<h2 id="will-be-removed-in-v1730"><a class="header" href="#will-be-removed-in-v1730"><strong>Will be removed in v1.73.0.</strong></a></h2>
 <h3 id="sentry"><a class="header" href="#sentry"><code>sentry</code></a></h3>
 <p>Use this option to enable sentry integration. Provide the DSN assigned to you by sentry
 with the <code>dsn</code> setting.</p>
@@ -2588,7 +2615,7 @@ sub-properties:</p>
 <li>
 <p><code>module</code>: The class name of a custom mapping module. Default is
 <code>synapse.handlers.oidc.JinjaOidcMappingProvider</code>.
-See https://matrix-org.github.io/synapse/latest/sso_mapping_providers.html#openid-mapping-providers
+See <a href="../../sso_mapping_providers.html#openid-mapping-providers">OpenID Mapping Providers</a>
 for information on implementing a custom mapping provider.</p>
 </li>
 <li>
@@ -3025,23 +3052,29 @@ will also not affect rooms created by other servers.</p>
 <p>This setting defines options related to the user directory.</p>
 <p>This option has the following sub-options:</p>
 <ul>
-<li><code>enabled</code>:  Defines whether users can search the user directory. If false then
-empty responses are returned to all queries. Defaults to true.</li>
-<li><code>search_all_users</code>: Defines whether to search all users visible to your HS when searching
+<li>
+<p><code>enabled</code>:  Defines whether users can search the user directory. If false then
+empty responses are returned to all queries. Defaults to true.</p>
+</li>
+<li>
+<p><code>search_all_users</code>: Defines whether to search all users visible to your HS when searching
 the user directory. If false, search results will only contain users
 visible in public rooms and users sharing a room with the requester.
-Defaults to false.
-NB. If you set this to true, and the last time the user_directory search
+Defaults to false.</p>
+<p>NB. If you set this to true, and the last time the user_directory search
 indexes were (re)built was before Synapse 1.44, you'll have to
-rebuild the indexes in order to search through all known users.
-These indexes are built the first time Synapse starts; admins can
-manually trigger a rebuild via API following the instructions at
-https://matrix-org.github.io/synapse/latest/usage/administration/admin_api/background_updates.html#run
-Set to true to return search results containing all known users, even if that
-user does not share a room with the requester.</li>
-<li><code>prefer_local_users</code>: Defines whether to prefer local users in search query results.
+rebuild the indexes in order to search through all known users.</p>
+<p>These indexes are built the first time Synapse starts; admins can
+manually trigger a rebuild via the API following the instructions
+<a href="../administration/admin_api/background_updates.html#run">for running background updates</a>,
+set to true to return search results containing all known users, even if that
+user does not share a room with the requester.</p>
+</li>
+<li>
+<p><code>prefer_local_users</code>: Defines whether to prefer local users in search query results.
 If set to true, local users are more likely to appear above remote users when searching the
-user directory. Defaults to false.</li>
+user directory. Defaults to false.</p>
+</li>
 </ul>
 <p>Example configuration:</p>
 <pre><code class="language-yaml">user_directory:
