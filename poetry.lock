@@ -1418,7 +1418,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-jsonschema"
-version = "4.4.6"
+version = "4.16.1"
 description = "Typing stubs for jsonschema"
 category = "dev"
 optional = false
@@ -2752,8 +2752,8 @@ types-ipaddress = [
     {file = "types_ipaddress-1.0.8-py3-none-any.whl", hash = "sha256:4933b74da157ba877b1a705d64f6fa7742745e9ffd65e51011f370c11ebedb55"},
 ]
 types-jsonschema = [
-    {file = "types-jsonschema-4.4.6.tar.gz", hash = "sha256:7f2a804618756768c7c0616f8c794b61fcfe3077c7ee1ad47dcf01c5e5f692bb"},
-    {file = "types_jsonschema-4.4.6-py3-none-any.whl", hash = "sha256:1db9031ca49a8444d01bd2ce8cf2f89318382b04610953b108321e6f8fb03390"},
+    {file = "types-jsonschema-4.16.1.tar.gz", hash = "sha256:95e31d2b90da218faf3d8fa34fa33ae55fc52c79b2cb7308755cc2d7d71b1096"},
+    {file = "types_jsonschema-4.16.1-py3-none-any.whl", hash = "sha256:21ca9a227185b83655c71755b5834c36d66ca43f9de77c018d61c4f917f851ab"},
 ]
 types-opentracing = [
     {file = "types-opentracing-2.4.7.tar.gz", hash = "sha256:be60e9618355aa892571ace002e6b353702538b1c0dc4fbc1c921219d6658830"},
