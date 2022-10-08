@@ -1450,7 +1450,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-pyOpenSSL"
-version = "22.0.10"
+version = "22.1.0.0"
 description = "Typing stubs for pyOpenSSL"
 category = "dev"
 optional = false
@@ -2768,8 +2768,8 @@ types-psycopg2 = [
     {file = "types_psycopg2-2.9.9-py3-none-any.whl", hash = "sha256:cec9291d4318ad70b407310f8304b3d40f6d0358f09870448f7a65e3027c80af"},
 ]
 types-pyOpenSSL = [
-    {file = "types-pyOpenSSL-22.0.10.tar.gz", hash = "sha256:f943b834f5b97e5e808764c2f6e37be1a2e226c46792296f61558196acfcc3a1"},
-    {file = "types_pyOpenSSL-22.0.10-py3-none-any.whl", hash = "sha256:63baea211768bea580a769ac5c0d637ae8cd3150314aadc5726ca22e4c4f241a"},
+    {file = "types-pyOpenSSL-22.1.0.0.tar.gz", hash = "sha256:3d8c8e0e81aa4ed51aa3f5ab4a9ee274e3252012818b74ebf38c0a289e6810a5"},
+    {file = "types_pyOpenSSL-22.1.0.0-py3-none-any.whl", hash = "sha256:af3521dea39aca57febd2d3bf65fe3bdf17afb23e023eb56ac25c1237462eeb1"},
 ]
 types-PyYAML = [
     {file = "types-PyYAML-6.0.12.tar.gz", hash = "sha256:f6f350418125872f3f0409d96a62a5a5ceb45231af5cc07ee0034ec48a3c82fa"},
